@@ -1,3 +1,4 @@
+//go:build !windows
 // +build !windows
 
 package spnego
@@ -71,13 +72,29 @@ func (k *krb5) SetSPNEGOHeader(req *http.Request) error {
 		return err
 	}
 
-	if err := k.makeCfg(); err != nil {
+	header, err := k.GetSPNEGOHeader(h)
+	if err != nil {
 		return err
+	}
+
+	req.Header.Set(spnego.HTTPHeaderAuthRequest, header)
+	return nil
+}
+
+func (k *krb5) GetSPNEGOHeader(hostname string) (string, error) {
+	if err := k.makeCfg(); err != nil {
+		return "", err
 	}
 
 	if err := k.makeClient(); err != nil {
-		return err
+		return "", err
 	}
 
-	return spnego.SetSPNEGOHeader(k.cl, req, "HTTP/"+h)
+	// gokrb5 requires http.Request, but not really needs
+	req, _ := http.NewRequest(http.MethodGet, "http://localhost", nil)
+	if err := spnego.SetSPNEGOHeader(k.cl, req, "HTTP/"+hostname); err != nil {
+		return "", err
+	}
+
+	return req.Header.Get(spnego.HTTPHeaderAuthRequest), nil
 }

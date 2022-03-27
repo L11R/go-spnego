@@ -9,6 +9,7 @@ import (
 // Provider is the interface that wraps OS agnostic functions for handling SPNEGO communication
 type Provider interface {
 	SetSPNEGOHeader(*http.Request) error
+	GetSPNEGOHeader(hostname string) (string, error)
 }
 
 func canonicalizeHostname(hostname string) (string, error) {

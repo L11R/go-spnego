@@ -21,20 +21,31 @@ func (s *sspi) SetSPNEGOHeader(req *http.Request) error {
 	if err != nil {
 		return err
 	}
-	spn := "HTTP/" + h
+
+	header, err := s.GetSPNEGOHeader(h)
+	if err != nil {
+		return err
+	}
+
+	req.Header.Set("Authorization", header)
+	return nil
+}
+
+// GetSPNEGOHeader returns the SPNEGO authorization header
+func (s *sspi) GetSPNEGOHeader(hostname string) (string, error) {
+	spn := "HTTP/" + hostname
 
 	cred, err := negotiate.AcquireCurrentUserCredentials()
 	if err != nil {
-		return err
+		return "", err
 	}
 	defer cred.Release()
 
 	secctx, token, err := negotiate.NewClientContext(cred, spn)
 	if err != nil {
-		return err
+		return "", err
 	}
 	defer secctx.Release()
 
-	req.Header.Set("Authorization", "Negotiate "+base64.StdEncoding.EncodeToString(token))
-	return nil
+	return "Negotiate " + base64.StdEncoding.EncodeToString(token), nil
 }
